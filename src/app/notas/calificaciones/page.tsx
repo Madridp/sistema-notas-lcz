@@ -2328,8 +2328,8 @@ const materiasPrimariaAlta = [
               };
             } else if (esBasico) {
               blqs = {
-                1: bloquesBasicoBase[1].map((m) => ({ ...m })),
-                2: bloque2ExtracurricularTexto.map((m) => ({ ...m })),
+                1: bloquesBasicoBase[1].filter((m) => m.id_materia !== 250).map((m) => ({ ...m })),
+                2: bloque2ExtracurricularTexto.filter((m) => m.id_materia !== 247).map((m) => ({ ...m })),
                 3: bloqueResponsabilidad.map((m) => ({ ...m })),
                 4: [],
                 5: [],
