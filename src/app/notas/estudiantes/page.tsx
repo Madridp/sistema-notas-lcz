@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { inscribirEstudiante, obtenerMatrizNotas, obtenerPermisosUsuario } from "../../actions"; // 💡 IMPORTAMOS LOS PERMISOS
+import { inscribirEstudiante, obtenerMatrizNotas, obtenerPermisosUsuario, actualizarEstudiante, darDeBajaAlumno } from "../../actions"; // 💡 IMPORTAMOS LOS PERMISOS
 
 export default function EstudiantesPage() {
   const [nombres, setNombres] = useState("");
@@ -14,10 +14,17 @@ export default function EstudiantesPage() {
   const [abierto, setAbierto] = useState<string | null>(null);
   const [seccionVisualizacion, setSeccionVisualizacion] = useState<string>("");
   const [conteos, setConteos] = useState<Record<string, number | string>>({});
-  
+
   // 💡 NUEVO ESTADO DE PERMISOS
   const [permisos, setPermisos] = useState<any>(null);
-  
+
+  // 💡 EDICIÓN Y BAJA DE ALUMNO
+  const [editando, setEditando] = useState<any>(null);
+  const [editNombres, setEditNombres] = useState("");
+  const [editApellidos, setEditApellidos] = useState("");
+  const [guardandoEdit, setGuardandoEdit] = useState(false);
+  const [bajaEnCurso, setBajaEnCurso] = useState<string | null>(null);
+
 
   const NIVELES = [
     {
@@ -66,12 +73,12 @@ export default function EstudiantesPage() {
 
   const obtenerConteoUnico = (data: any[]) => {
     if (!data || !Array.isArray(data)) return 0;
-    const nombresUnicos = new Set();
+    const idsUnicos = new Set();
     data.forEach((curr) => {
-      const nombreCompleto = curr.NOMBRE || `${curr.NOMBRES} ${curr.APELLIDOS}`;
-      nombresUnicos.add(nombreCompleto);
+      const id = curr.ID_ALUMNO || curr.id_estudiante || (curr.NOMBRE || `${curr.NOMBRES} ${curr.APELLIDOS}`);
+      idsUnicos.add(id);
     });
-    return nombresUnicos.size;
+    return idsUnicos.size;
   };
 
   useEffect(() => {
@@ -108,8 +115,16 @@ export default function EstudiantesPage() {
       const data = await obtenerMatrizNotas(Number(gradoId), Number(secId));
       const unicos = data.reduce((acc: any[], curr: any) => {
         const nombreCompleto = curr.NOMBRE || `${curr.NOMBRES} ${curr.APELLIDOS}`;
-        if (!acc.find((a) => a.nombre === nombreCompleto)) {
-          acc.push({ nombre: nombreCompleto, codigo: curr.ID_ALUMNO || curr.id_estudiante || "S/C" });
+        const codigo = curr.ID_ALUMNO || curr.id_estudiante || "S/C";
+        // 💡 Agrupamos por ID (codigo), no por nombre: dos alumnos con el mismo
+        // nombre ya no se fusionan en uno solo.
+        if (!acc.find((a) => a.codigo === codigo)) {
+          acc.push({
+            nombre: nombreCompleto,
+            codigo,
+            nombres: curr.NOMBRES || curr.nombres || "",
+            apellidos: curr.APELLIDOS || curr.apellidos || "",
+          });
         }
         return acc;
       }, []);
@@ -132,6 +147,60 @@ export default function EstudiantesPage() {
       setConteos((prev) => ({ ...prev, [gradoSeleccionado]: typeof prev[gradoSeleccionado] === "number" ? (prev[gradoSeleccionado] as number) + 1 : 1 }));
     }
     setCargando(false);
+  };
+
+  // 💡 EDICIÓN
+  const abrirEdicion = (est: any) => {
+    setEditando(est);
+    setEditNombres(est.nombres || "");
+    setEditApellidos(est.apellidos || "");
+  };
+
+  const guardarEdicion = async () => {
+    if (!editando || !abierto) return;
+    if (!editNombres.trim() || !editApellidos.trim()) {
+      return alert("⚠️ Nombres y apellidos no pueden quedar vacíos.");
+    }
+    setGuardandoEdit(true);
+    const res = await actualizarEstudiante(
+      Number(editando.codigo),
+      editNombres.trim(),
+      editApellidos.trim(),
+      Number(abierto),
+      Number(seccionVisualizacion)
+    );
+    setGuardandoEdit(false);
+    if (res.success) {
+      setEditando(null);
+      cargarEstudiantesGrado(abierto, seccionVisualizacion);
+    } else {
+      alert("❌ No se pudo guardar el cambio.");
+    }
+  };
+
+  // 💡 BAJA: oculta al alumno de los listados SIN borrar sus notas. Reversible en la base.
+  const darBaja = async (est: any) => {
+    if (!abierto) return;
+    const ok = confirm(
+      `¿Dar de baja a ${est.nombre}?\n\n` +
+      `Dejará de aparecer en los listados y en las boletas, pero SUS NOTAS NO SE BORRAN.\n\n` +
+      `Se puede revertir después.`
+    );
+    if (!ok) return;
+
+    setBajaEnCurso(String(est.codigo));
+    const res = await darDeBajaAlumno(Number(est.codigo));
+    setBajaEnCurso(null);
+
+    if (res.success) {
+      cargarEstudiantesGrado(abierto, seccionVisualizacion);
+      setConteos((prev) => ({
+        ...prev,
+        [abierto]: typeof prev[abierto] === "number" ? Math.max(0, (prev[abierto] as number) - 1) : prev[abierto],
+      }));
+    } else {
+      alert("❌ No se pudo dar de baja al alumno.");
+    }
   };
 
   const toggleGrado = (g: any) => {
@@ -261,7 +330,7 @@ export default function EstudiantesPage() {
                         <div className="bg-gray-50 rounded-3xl border border-gray-100 overflow-hidden">
                           <table className="w-full text-left">
                             <thead className="bg-white text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100">
-                              <tr><th className="px-8 py-5">Código ID</th><th className="px-8 py-5">Nombre del Alumno</th></tr>
+                              <tr><th className="px-8 py-5">Código ID</th><th className="px-8 py-5">Nombre del Alumno</th><th className="px-8 py-5 text-right">Acciones</th></tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                               {gradosVisibles[`${g.id}-${seccionVisualizacion}`]?.length > 0 ? (
@@ -269,10 +338,18 @@ export default function EstudiantesPage() {
                                   <tr key={i} className="hover:bg-white transition-colors">
                                     <td className="px-8 py-5"><span className="bg-white px-3 py-1.5 rounded-lg text-[11px] text-[#17365D] font-black border border-blue-100 shadow-sm">{est.codigo}</span></td>
                                     <td className="px-8 py-5 font-black text-gray-700 uppercase text-sm">{est.nombre}</td>
+                                    <td className="px-8 py-5">
+                                      <div className="flex gap-2 justify-end">
+                                        <button onClick={() => abrirEdicion(est)} className="px-5 py-2 bg-[#17365D] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-slate-800 transition-colors active:scale-95">Editar</button>
+                                        <button onClick={() => darBaja(est)} disabled={bajaEnCurso === String(est.codigo)} className="px-5 py-2 bg-white text-[#E60000] border-2 border-red-100 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-red-50 hover:border-red-200 transition-colors active:scale-95 disabled:opacity-40">
+                                          {bajaEnCurso === String(est.codigo) ? "..." : "Dar de baja"}
+                                        </button>
+                                      </div>
+                                    </td>
                                   </tr>
                                 ))
                               ) : (
-                                <tr><td colSpan={2} className="px-8 py-16 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Sin alumnos registrados en esta sección</td></tr>
+                                <tr><td colSpan={3} className="px-8 py-16 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Sin alumnos registrados en esta sección</td></tr>
                               )}
                             </tbody>
                           </table>
@@ -286,6 +363,34 @@ export default function EstudiantesPage() {
           ))}
         </div>
       </main>
+
+      {/* 💡 CUADRO DE EDICIÓN */}
+      {editando && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6" onClick={() => setEditando(null)}>
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-black text-[#17365D] uppercase italic leading-none mb-1">Editar Alumno</h2>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">ID {editando.codigo}</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 ml-1">Nombres</label>
+                <input value={editNombres} onChange={(e) => setEditNombres(e.target.value)} type="text" className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none font-bold text-sm uppercase focus:border-red-600 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 ml-1">Apellidos</label>
+                <input value={editApellidos} onChange={(e) => setEditApellidos(e.target.value)} type="text" className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none font-bold text-sm uppercase focus:border-red-600 transition-colors" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button onClick={() => setEditando(null)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 transition-colors">Cancelar</button>
+              <button onClick={guardarEdicion} disabled={guardandoEdit} className="flex-1 py-4 bg-[#E60000] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg hover:bg-red-700 transition-all active:scale-95 disabled:opacity-50">
+                {guardandoEdit ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

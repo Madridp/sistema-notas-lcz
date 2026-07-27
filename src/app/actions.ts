@@ -344,6 +344,18 @@ export async function actualizarEstudiante(id: number, nombres: string, apellido
   }
 }
 
+// 💡 BAJA LÓGICA: oculta al alumno de listados y boletas sin borrar sus notas.
+// Usa el procedimiento sp_alumno_baja (estado=0, ESTADO_REGISTRO=0). Reversible.
+export async function darDeBajaAlumno(id: number) {
+  try {
+    await ejecutarSP('sp_alumno_baja', [id]);
+    return { success: true };
+  } catch (error) {
+    console.error("❌ Error dando de baja alumno:", error);
+    return { success: false };
+  }
+}
+
 export async function asignarMaestroTitularAction(id_usuario: number, id_grado: number, seccion: number) {
   try {
     await ejecutarSP('sp_asignar_titular', [id_usuario, id_grado, seccion]);
