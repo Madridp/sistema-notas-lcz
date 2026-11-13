@@ -109,9 +109,13 @@ export const BoletaGeneral = React.forwardRef(
     };
 
     return (
-      <div
+                <div
         ref={ref}
-        className="relative bg-white w-[210mm] h-[297mm] font-sans print:m-0 overflow-hidden"
+        className="relative bg-white w-[8.5in] h-[13in] font-sans print:m-0 overflow-hidden"
+      >
+      <div
+        className="absolute top-0 left-0 w-[210mm] h-[297mm] origin-top-left"
+        style={{ transform: "scale(1.0281, 1.1118)" }}
       >
         <img
           src="/boleta_primaria.jpg"
@@ -132,14 +136,14 @@ export const BoletaGeneral = React.forwardRef(
         <div className="absolute top-[223px] left-[360px] text-[12px] font-black text-[#17365D] uppercase tracking-wide z-10">
           {textoSeccion}
         </div>
-        <div className="absolute top-[223px] left-[430px] text-[11px] font-bold text-[#17365D] uppercase z-10 flex items-center gap-1">
+                        <div className="absolute top-[223px] left-[430px] text-[11px] font-bold text-[#17365D] uppercase z-10 flex items-center gap-1">
           <span className="text-gray-500 font-normal normal-case text-[10px]">
             Docente Titular:
           </span>{" "}
           {nombreMaestro}
         </div>
 
-        <div className="absolute top-[245px] left-1/2 -translate-x-1/2 w-[170mm] z-10 flex flex-col gap-[6px]">
+        <div className="absolute top-[245px] bottom-[120px] left-1/2 -translate-x-1/2 w-[170mm] z-10 flex flex-col justify-between gap-[6px]">
           {/* BLOQUE 1 */}
           {getMaterias(1).length > 0 && (
             <table className="w-full border-collapse shadow-sm">
@@ -337,8 +341,13 @@ export const BoletaGeneral = React.forwardRef(
               </tbody>
             </table>
           )}
-        </div>
-        <style jsx>{`
+                </div>
+      </div>
+        <style jsx global>{`
+          @page {
+            size: 8.5in 13in;
+            margin: 0;
+          }
           @media print {
             body {
               -webkit-print-color-adjust: exact;
