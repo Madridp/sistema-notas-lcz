@@ -2578,8 +2578,18 @@ const materiasPrimariaAlta = [
     });
   };
 
-  const renderFilaMateria = (m: any, idA: number) => {
+    const renderFilaMateria = (m: any, idA: number) => {
     const editable = puedeEditarMateria(m.id_materia);
+
+    // 💡 PROMEDIO DE LA MATERIA: promedio de las unidades que ya tienen nota.
+    // Mismo cálculo que la columna NOTAS FINALES de la boleta.
+    const notasNum = ["u1", "u2", "u3", "u4"]
+      .map((u) => parseFloat(m[u]))
+      .filter((n) => !isNaN(n));
+    const promedioMateria =
+      m.tipo === "Numerica" && notasNum.length > 0
+        ? Math.round(notasNum.reduce((a, b) => a + b, 0) / notasNum.length)
+        : null;
 
     return (
       <tr
@@ -2642,6 +2652,17 @@ const materiasPrimariaAlta = [
             </td>
           );
         })}
+        <td className="px-1 md:px-3 py-4 text-center">
+          {promedioMateria !== null ? (
+            <span
+              className={`inline-flex items-center justify-center w-[50px] md:w-[70px] h-[45px] rounded-xl border-2 font-black text-sm ${promedioMateria < 60 ? "text-red-600 bg-red-50 border-red-200" : "text-[#17365D] bg-slate-50 border-slate-200"}`}
+            >
+              {promedioMateria}
+            </span>
+          ) : (
+            <span className="text-gray-300 font-black">—</span>
+          )}
+        </td>
       </tr>
     );
   };
@@ -3006,11 +3027,12 @@ const materiasPrimariaAlta = [
                         >
                           U III
                         </th>
-                        <th
+                                             <th
                           className={`py-4 ${unidadesHabilitadas.includes(4) ? "text-gray-800" : "opacity-30"}`}
                         >
                           U IV
                         </th>
+                        <th className="py-4 text-gray-800">Promedio</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -3018,7 +3040,7 @@ const materiasPrimariaAlta = [
                         <>
                           <tr className="bg-red-50/30 text-left">
                             <td
-                              colSpan={5}
+                              colSpan={6}
                               className="px-4 md:px-10 py-4 font-black text-red-700 uppercase text-[10px] tracking-widest"
                             >
                               Áreas Curriculares
@@ -3029,7 +3051,7 @@ const materiasPrimariaAlta = [
                           )}
                           <tr className="bg-yellow-50/30 text-left border-t-4 border-white">
                             <td
-                              colSpan={5}
+                              colSpan={6}
                               className="px-4 md:px-10 py-4 font-black text-yellow-700 uppercase text-[10px] tracking-widest"
                             >
                               Aspectos
@@ -3074,7 +3096,7 @@ const materiasPrimariaAlta = [
                                 <React.Fragment key={area.id}>
                                   <tr>
                                     <td
-                                      colSpan={5}
+                                      colSpan={6}
                                       className="px-4 md:px-10 py-4 font-black text-gray-700 uppercase text-[10px] bg-gray-50/50 text-left tracking-widest border-t-4 border-white"
                                     >
                                       {area.titulo}

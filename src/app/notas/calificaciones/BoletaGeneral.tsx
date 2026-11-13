@@ -84,6 +84,18 @@ export const BoletaGeneral = React.forwardRef(
       return Math.round(suma / notas.length).toString();
     };
 
+    // 💡 NOTA FINAL: promedio de las unidades que YA tienen nota.
+    // Antes esto lo llenaba el script de Tampermonkey; ahora lo calcula el sistema.
+    // Las materias de texto (DESTACA / AVANZA / NM) devuelven vacío, igual que antes.
+    const calcularNotaFinal = (m: any) => {
+      const notas = ["u1", "u2", "u3", "u4"]
+        .map((u) => parseFloat(m[u]))
+        .filter((n) => !isNaN(n));
+      if (notas.length === 0) return "";
+      const suma = notas.reduce((a, b) => a + b, 0);
+      return Math.round(suma / notas.length).toString();
+    };
+
     const headerClass =
       "bg-[#17365D] text-white font-bold text-[10px] py-[2px] px-2 border border-[#17365D] uppercase text-center";
     const cellMateriaClass =
@@ -109,161 +121,202 @@ export const BoletaGeneral = React.forwardRef(
     };
 
     return (
-                <div
+      <div
         ref={ref}
         className="relative bg-white w-[8.5in] h-[13in] font-sans print:m-0 overflow-hidden"
       >
-      <div
-        className="absolute top-0 left-0 w-[210mm] h-[297mm] origin-top-left"
-        style={{ transform: "scale(1.0281, 1.1118)" }}
-      >
-        <img
-          src="/boleta_primaria.jpg"
-          className="absolute inset-0 w-full h-full object-fill z-0"
-          alt="Fondo Boleta General"
-        />
+        <div
+          className="absolute top-0 left-0 w-[210mm] h-[297mm] origin-top-left"
+          style={{ transform: "scale(1.0281, 1.1118)" }}
+        >
+          <img
+            src="/boleta_primaria.jpg"
+            className="absolute inset-0 w-full h-full object-fill z-0"
+            alt="Fondo Boleta General"
+          />
 
-        <div className="absolute top-[40px] left-[70px] w-[100px] text-center text-[50px] font-black text-red-400/80 tracking-widest z-10">
-          {anioImprimir}
-        </div>
+          <div className="absolute top-[40px] left-[70px] w-[100px] text-center text-[50px] font-black text-red-400/80 tracking-widest z-10">
+            {anioImprimir}
+          </div>
 
-        <div className="absolute top-[200px] left-[250px] text-[12px] font-black text-[#17365D] uppercase tracking-wide z-10">
-          {alumno.nombre}
-        </div>
-        <div className="absolute top-[223px] left-[157px] text-[12px] font-black text-[#17365D] uppercase tracking-wide z-10">
-          {textoGrado}
-        </div>
-        <div className="absolute top-[223px] left-[360px] text-[12px] font-black text-[#17365D] uppercase tracking-wide z-10">
-          {textoSeccion}
-        </div>
-                        <div className="absolute top-[223px] left-[430px] text-[11px] font-bold text-[#17365D] uppercase z-10 flex items-center gap-1">
-          <span className="text-gray-500 font-normal normal-case text-[10px]">
-            Docente Titular:
-          </span>{" "}
-          {nombreMaestro}
-        </div>
+          <div className="absolute top-[200px] left-[250px] text-[12px] font-black text-[#17365D] uppercase tracking-wide z-10">
+            {alumno.nombre}
+          </div>
+          <div className="absolute top-[223px] left-[157px] text-[12px] font-black text-[#17365D] uppercase tracking-wide z-10">
+            {textoGrado}
+          </div>
+          <div className="absolute top-[223px] left-[360px] text-[12px] font-black text-[#17365D] uppercase tracking-wide z-10">
+            {textoSeccion}
+          </div>
+          <div className="absolute top-[223px] left-[430px] text-[11px] font-bold text-[#17365D] uppercase z-10 flex items-center gap-1">
+            <span className="text-gray-500 font-normal normal-case text-[10px]">
+              Docente Titular:
+            </span>{" "}
+            {nombreMaestro}
+          </div>
 
-        <div className="absolute top-[245px] bottom-[120px] left-1/2 -translate-x-1/2 w-[170mm] z-10 flex flex-col justify-between gap-[6px]">
-          {/* BLOQUE 1 */}
-          {getMaterias(1).length > 0 && (
-            <table className="w-full border-collapse shadow-sm">
-              <thead>
-                <tr>
-                  <th className={headerClass}>{getTituloBloque(1)}</th>
-                  <th className={headerClass}>I UNIDAD</th>
-                  <th className={headerClass}>II UNIDAD</th>
-                  <th className={headerClass}>III UNIDAD</th>
-                  <th className={headerClass}>IV UNIDAD</th>
-                  <th className={`${headerClass} leading-tight`}>
-                    NOTAS
-                    <br />
-                    FINALES
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {getMaterias(1).map((m: any) => (
-                  <tr key={m.id_materia}>
-                    <td className={cellMateriaClass}>{m.materia}</td>
-                    {renderNotaCell(m.u1)}
-                    {renderNotaCell(m.u2)}
-                    {renderNotaCell(m.u3)}
-                    {renderNotaCell(m.u4)}
-                    <td className="border border-[#17365D] font-black text-slate-800 text-[10px] py-[1.5px] text-center w-[11%]"></td>
-                  </tr>
-                ))}
-                {!esPerito && (
-                  <tr className="bg-[#17365D]/10">
-                    <td className={`${cellMateriaClass} text-center italic`}>
-                      Promedio Exacto
-                    </td>
-                    {renderNotaCell(
-                      calcularPromedioBloque(getMaterias(1), "u1"),
-                    )}
-                    {renderNotaCell(
-                      calcularPromedioBloque(getMaterias(1), "u2"),
-                    )}
-                    {renderNotaCell(
-                      calcularPromedioBloque(getMaterias(1), "u3"),
-                    )}
-                    {renderNotaCell(
-                      calcularPromedioBloque(getMaterias(1), "u4"),
-                    )}
-                    <td className="border border-[#17365D]"></td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-
-          {/* BLOQUE 2 */}
-          {getMaterias(2).length > 0 && (
-            <>
-              {!esPerito && (
-                <div className="text-center font-bold italic text-[12px] text-[#17365D] -mb-1 mt-1">
-                  {esBasicoOBachillerato
-                    ? "Resultado: Destaca, Avanza, Necesita Mejorar"
-                    : "Programas Educativos Extracurriculares:"}
-                </div>
-              )}
+          <div className="absolute top-[245px] bottom-[120px] left-1/2 -translate-x-1/2 w-[170mm] z-10 flex flex-col justify-between gap-[6px]">
+            {/* BLOQUE 1 */}
+            {getMaterias(1).length > 0 && (
               <table className="w-full border-collapse shadow-sm">
                 <thead>
                   <tr>
-                    <th className={headerClass}>{getTituloBloque(2)}</th>
+                    <th className={headerClass}>{getTituloBloque(1)}</th>
                     <th className={headerClass}>I UNIDAD</th>
                     <th className={headerClass}>II UNIDAD</th>
                     <th className={headerClass}>III UNIDAD</th>
                     <th className={headerClass}>IV UNIDAD</th>
-                    {esPerito && (
-                      <th className={`${headerClass} leading-tight`}>
-                        NOTAS
-                        <br />
-                        FINALES
-                      </th>
-                    )}
+                    <th className={`${headerClass} leading-tight`}>
+                      NOTAS
+                      <br />
+                      FINALES
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {getMaterias(2).map((m: any) => (
+                  {getMaterias(1).map((m: any) => (
                     <tr key={m.id_materia}>
                       <td className={cellMateriaClass}>{m.materia}</td>
                       {renderNotaCell(m.u1)}
                       {renderNotaCell(m.u2)}
                       {renderNotaCell(m.u3)}
                       {renderNotaCell(m.u4)}
-                      {esPerito && (
-                        <td className="border border-[#17365D] font-black text-slate-800 text-[10px] py-[1.5px] text-center w-[11%]"></td>
-                      )}
+                      {renderNotaCell(calcularNotaFinal(m))}
                     </tr>
                   ))}
-                  {esPerito && (
+                  {!esPerito && (
                     <tr className="bg-[#17365D]/10">
                       <td className={`${cellMateriaClass} text-center italic`}>
-                        Promedio Exacto (General)
+                        Promedio Exacto
                       </td>
-                      {renderNotaCell(calcularPromedioPerito("u1"))}
-                      {renderNotaCell(calcularPromedioPerito("u2"))}
-                      {renderNotaCell(calcularPromedioPerito("u3"))}
-                      {renderNotaCell(calcularPromedioPerito("u4"))}
-                      <td className="border border-[#17365D]"></td>
+                      {renderNotaCell(
+                        calcularPromedioBloque(getMaterias(1), "u1"),
+                      )}
+                      {renderNotaCell(
+                        calcularPromedioBloque(getMaterias(1), "u2"),
+                      )}
+                      {renderNotaCell(
+                        calcularPromedioBloque(getMaterias(1), "u3"),
+                      )}
+                      {renderNotaCell(
+                        calcularPromedioBloque(getMaterias(1), "u4"),
+                      )}
+                      {renderNotaCell(
+                        calcularNotaFinal({
+                          u1: calcularPromedioBloque(getMaterias(1), "u1"),
+                          u2: calcularPromedioBloque(getMaterias(1), "u2"),
+                          u3: calcularPromedioBloque(getMaterias(1), "u3"),
+                          u4: calcularPromedioBloque(getMaterias(1), "u4"),
+                        }),
+                      )}
                     </tr>
                   )}
                 </tbody>
               </table>
-            </>
-          )}
+            )}
 
-          {/* BLOQUE 3 */}
-          {getMaterias(3).length > 0 && (
-            <>
-              <div className="text-center font-bold italic text-[12px] text-[#17365D] -mb-1 mt-1">
-                Resultado: Destaca, Avanza, Necesita Mejorar, Insatisfactorio:
-              </div>
-              <table className="w-full border-collapse shadow-sm">
+            {/* BLOQUE 2 */}
+            {getMaterias(2).length > 0 && (
+              <>
+                {!esPerito && (
+                  <div className="text-center font-bold italic text-[12px] text-[#17365D] -mb-1 mt-1">
+                    {esBasicoOBachillerato
+                      ? "Resultado: Destaca, Avanza, Necesita Mejorar"
+                      : "Programas Educativos Extracurriculares:"}
+                  </div>
+                )}
+                <table className="w-full border-collapse shadow-sm">
+                  <thead>
+                    <tr>
+                      <th className={headerClass}>{getTituloBloque(2)}</th>
+                      <th className={headerClass}>I UNIDAD</th>
+                      <th className={headerClass}>II UNIDAD</th>
+                      <th className={headerClass}>III UNIDAD</th>
+                      <th className={headerClass}>IV UNIDAD</th>
+                      {esPerito && (
+                        <th className={`${headerClass} leading-tight`}>
+                          NOTAS
+                          <br />
+                          FINALES
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getMaterias(2).map((m: any) => (
+                      <tr key={m.id_materia}>
+                        <td className={cellMateriaClass}>{m.materia}</td>
+                        {renderNotaCell(m.u1)}
+                        {renderNotaCell(m.u2)}
+                        {renderNotaCell(m.u3)}
+                        {renderNotaCell(m.u4)}
+                        {esPerito && renderNotaCell(calcularNotaFinal(m))}
+                      </tr>
+                    ))}
+                    {esPerito && (
+                      <tr className="bg-[#17365D]/10">
+                        <td className={`${cellMateriaClass} text-center italic`}>
+                          Promedio Exacto (General)
+                        </td>
+                        {renderNotaCell(calcularPromedioPerito("u1"))}
+                        {renderNotaCell(calcularPromedioPerito("u2"))}
+                        {renderNotaCell(calcularPromedioPerito("u3"))}
+                        {renderNotaCell(calcularPromedioPerito("u4"))}
+                        {renderNotaCell(
+                          calcularNotaFinal({
+                            u1: calcularPromedioPerito("u1"),
+                            u2: calcularPromedioPerito("u2"),
+                            u3: calcularPromedioPerito("u3"),
+                            u4: calcularPromedioPerito("u4"),
+                          }),
+                        )}
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {/* BLOQUE 3 */}
+            {getMaterias(3).length > 0 && (
+              <>
+                <div className="text-center font-bold italic text-[12px] text-[#17365D] -mb-1 mt-1">
+                  Resultado: Destaca, Avanza, Necesita Mejorar, Insatisfactorio:
+                </div>
+                <table className="w-full border-collapse shadow-sm">
+                  <thead>
+                    <tr>
+                      <th className={`${headerClass} leading-tight py-1`}>
+                        {getTituloBloque(3)}
+                      </th>
+                      <th className={headerClass}>I UNIDAD</th>
+                      <th className={headerClass}>II UNIDAD</th>
+                      <th className={headerClass}>III UNIDAD</th>
+                      <th className={headerClass}>IV UNIDAD</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getMaterias(3).map((m: any) => (
+                      <tr key={m.id_materia}>
+                        <td className={cellMateriaClass}>{m.materia}</td>
+                        {renderNotaCell(m.u1)}
+                        {renderNotaCell(m.u2)}
+                        {renderNotaCell(m.u3)}
+                        {renderNotaCell(m.u4)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {/* 💡 AQUÍ SE INVIERTE EL ORDEN: PRIMERO DIBUJAMOS EL BLOQUE 5 (APRENDIZAJE) */}
+            {getMaterias(5).length > 0 && (
+              <table className="w-full border-collapse shadow-sm mt-1">
                 <thead>
                   <tr>
                     <th className={`${headerClass} leading-tight py-1`}>
-                      {getTituloBloque(3)}
+                      {getTituloBloque(5)}
                     </th>
                     <th className={headerClass}>I UNIDAD</th>
                     <th className={headerClass}>II UNIDAD</th>
@@ -272,7 +325,35 @@ export const BoletaGeneral = React.forwardRef(
                   </tr>
                 </thead>
                 <tbody>
-                  {getMaterias(3).map((m: any) => (
+                  {getMaterias(5).map((m: any) => (
+                    <tr key={m.id_materia}>
+                      <td className={`${cellMateriaClass} leading-tight`}>
+                        {m.materia}
+                      </td>
+                      {renderNotaCell(m.u1)}
+                      {renderNotaCell(m.u2)}
+                      {renderNotaCell(m.u3)}
+                      {renderNotaCell(m.u4)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {/* 💡 Y HASTA EL FINAL DIBUJAMOS EL BLOQUE 4 (HÁBITOS) PARA QUE QUEDE ABAJO */}
+            {getMaterias(4).length > 0 && (
+              <table className="w-full border-collapse shadow-sm mt-1">
+                <thead>
+                  <tr>
+                    <th className={headerClass}>{getTituloBloque(4)}</th>
+                    <th className={headerClass}>I UNIDAD</th>
+                    <th className={headerClass}>II UNIDAD</th>
+                    <th className={headerClass}>III UNIDAD</th>
+                    <th className={headerClass}>IV UNIDAD</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getMaterias(4).map((m: any) => (
                     <tr key={m.id_materia}>
                       <td className={cellMateriaClass}>{m.materia}</td>
                       {renderNotaCell(m.u1)}
@@ -283,66 +364,9 @@ export const BoletaGeneral = React.forwardRef(
                   ))}
                 </tbody>
               </table>
-            </>
-          )}
-
-          {/* 💡 AQUÍ SE INVIERTE EL ORDEN: PRIMERO DIBUJAMOS EL BLOQUE 5 (APRENDIZAJE) */}
-          {getMaterias(5).length > 0 && (
-            <table className="w-full border-collapse shadow-sm mt-1">
-              <thead>
-                <tr>
-                  <th className={`${headerClass} leading-tight py-1`}>
-                    {getTituloBloque(5)}
-                  </th>
-                  <th className={headerClass}>I UNIDAD</th>
-                  <th className={headerClass}>II UNIDAD</th>
-                  <th className={headerClass}>III UNIDAD</th>
-                  <th className={headerClass}>IV UNIDAD</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getMaterias(5).map((m: any) => (
-                  <tr key={m.id_materia}>
-                    <td className={`${cellMateriaClass} leading-tight`}>
-                      {m.materia}
-                    </td>
-                    {renderNotaCell(m.u1)}
-                    {renderNotaCell(m.u2)}
-                    {renderNotaCell(m.u3)}
-                    {renderNotaCell(m.u4)}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          {/* 💡 Y HASTA EL FINAL DIBUJAMOS EL BLOQUE 4 (HÁBITOS) PARA QUE QUEDE ABAJO */}
-          {getMaterias(4).length > 0 && (
-            <table className="w-full border-collapse shadow-sm mt-1">
-              <thead>
-                <tr>
-                  <th className={headerClass}>{getTituloBloque(4)}</th>
-                  <th className={headerClass}>I UNIDAD</th>
-                  <th className={headerClass}>II UNIDAD</th>
-                  <th className={headerClass}>III UNIDAD</th>
-                  <th className={headerClass}>IV UNIDAD</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getMaterias(4).map((m: any) => (
-                  <tr key={m.id_materia}>
-                    <td className={cellMateriaClass}>{m.materia}</td>
-                    {renderNotaCell(m.u1)}
-                    {renderNotaCell(m.u2)}
-                    {renderNotaCell(m.u3)}
-                    {renderNotaCell(m.u4)}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-                </div>
-      </div>
+            )}
+          </div>
+        </div>
         <style jsx global>{`
           @page {
             size: 8.5in 13in;
