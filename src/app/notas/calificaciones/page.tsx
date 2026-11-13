@@ -1,4 +1,5 @@
 "use client";
+import { VistaPorClase } from "./VistaPorClase";
 import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
 import { useReactToPrint } from "react-to-print";
@@ -34,6 +35,7 @@ export default function CalificacionesPage() {
   const [unidadesHabilitadas, setUnidadesHabilitadas] = useState<number[]>([1]);
 
   const [alumnosGuardando, setAlumnosGuardando] = useState<number[]>([]);
+  const [vistaPorClase, setVistaPorClase] = useState(false);
   const [cambiosSinGuardar, setCambiosSinGuardar] = useState<number[]>([]);
   
   // 💡 NUEVO ESTADO PARA EL GUARDADO MASIVO
@@ -2902,7 +2904,28 @@ const materiasPrimariaAlta = [
           </div>
         )}
 
-        {estudiantesAgrupados.map((est, index) => {
+        {estudiantesAgrupados.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <button
+              onClick={() => setVistaPorClase(!vistaPorClase)}
+              className="px-6 py-4 bg-white border-2 border-gray-200 rounded-2xl font-black text-[10px] uppercase tracking-widest text-gray-700 hover:border-red-600 hover:text-red-600 transition-colors shadow-sm"
+            >
+              {vistaPorClase ? "🧑‍🎓 Ver por Alumno" : "📚 Ver por Clase"}
+            </button>
+          </div>
+        )}
+
+        {vistaPorClase && (
+          <VistaPorClase
+            estudiantes={estudiantesAgrupados}
+            unidadesHabilitadas={unidadesHabilitadas}
+            puedeEditarMateria={puedeEditarMateria}
+            onNotaChange={handleNotaChange}
+            cambiosSinGuardar={cambiosSinGuardar}
+          />
+        )}
+
+        {!vistaPorClase && estudiantesAgrupados.map((est, index) => {
           const estaAbierto = expandidos.includes(est.id_alumno);
           const estaGuardandoEsteAlumno = alumnosGuardando.includes(
             est.id_alumno,
